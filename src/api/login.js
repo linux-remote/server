@@ -1,15 +1,7 @@
 const separateLogin = require('../lib/separate-login');
 const { setSid, setCookie } = require('../lib/session');
 const { halfProxy } = require('../lib/proxy');
-// remove IPv4's ::ffff:
-// http://www.voidcn.com/article/p-crckexby-bst.html
-// https://stackoverflow.com/questions/29411551
-function getIP(str){
-  if(/::ffff:\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}/.test(str)){
-    return str.substr(7);
-  }
-  return str;
-}
+
 
 // post
 exports.login = function(req, res, next){

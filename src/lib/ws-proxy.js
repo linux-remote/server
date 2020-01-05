@@ -1,6 +1,9 @@
 const WebSocket = require('ws');
-const { safeSend } = require('../common/util');
-
+function safeSend(ws, msg) {
+  if(ws.readyState === 1) {
+    ws.send(msg);
+  }
+}
 module.exports = function(ws, to) {
   const client = new WebSocket(to);
   simplePipe(ws, client);
