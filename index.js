@@ -9,6 +9,7 @@ const http = require('http');
 const https = require('https');
 const fs = require('fs');
 
+const { initSecure } = require('./src/lib/secure');
 
 function def(obj, key, value){
   if(obj[key] === undefined){
@@ -16,14 +17,13 @@ function def(obj, key, value){
   }
 }
 
-function getConf(){
+function _getConf(){
   let content = fs.readFileSync('/opt/linux-remote/config.js', 'utf-8');
   return JSON.parse(content)
 }
-const conf = global.CONF = getConf();
+const conf = global.CONF = _getConf();
 def(conf, 'xPoweredBy', false);
 def(conf, 'appTrustProxy', false);
-
 
 const app = require('./app');
 
@@ -32,24 +32,20 @@ app.set('port', conf.port);
 let server;
 const secure = conf.secure;
 if(conf.secure){
-  if(!secure.key){
-    secure.key = fs.readFileSync(secure.keyPath, 'utf-8');
-    delete(secure.keyPath);
+  let errMsg = initSecure(conf.secure);
+  if(errMsg){
+    console.error(errMsg);
+    process.exit(1);
   }
-  if(!secure.cert){
-    secure.cert = fs.readFileSync(secure.certPath, 'utf-8');
-    delete(secure.certPath);
-  }
-  if(!secure.ca && secure.caPath){
-    secure.ca = fs.readFileSync(secure.caPath, 'utf-8');
-    delete(secure.caPath);
-  }
+
   server = https.createServer(secure, app);
+  
 }else{
   server = http.createServer(app);
 }
 
 server.listen(port);
+
 server.on('listening', function(){
   console.log('[linux-remote]: Server start!');
   console.log('Listening on ' + port);
@@ -64,7 +60,6 @@ server.on('error', function(err){
   }
   throw err;
 });
-
 
 const handleServerUpgrade = require('./ws-server');
 handleServerUpgrade(server);

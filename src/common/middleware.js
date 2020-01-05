@@ -37,13 +37,11 @@ exports.errHandle = function(err, req, res, next) {
 
   setTimeout(() => {
     if(req.complete){
-      res.status(err.status || 500);
-      res.end(`${err.name}: ${err.message}`);
+      res.status(err.status || 400);
+      res.end(err.message || '');
     } else {
       // eg: upload , stop immediately
-      // _console.log('errHandle stop immediately');
       req.destroy();
     }
   });
-  //util.errLog(msg, req);
 };

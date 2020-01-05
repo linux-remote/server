@@ -44,6 +44,10 @@ app.get('/api/loginedList', login.loginedList);
 app.post('/api/login',  login.login);
 app.post('/api/logout',  login.logout);
 
+// 上传
+app.post('/api/user/:username/upload', function(req, res, next){
+  res.end(req.params.username);
+});
 //用户进程代理
 app.use('/api/user/:username', function(req, res, next){
   res.end(req.params.username);
