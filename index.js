@@ -54,12 +54,11 @@ server.on('listening', function(){
 
 server.on('error', function(err){
   if (err.code === 'EADDRINUSE') {
-    console.error(port + ' is already in use');
+    console.error(port + ' is already in use.');
     process.exit(1);
-    return;
   }
   throw err;
 });
 
-const handleServerUpgrade = require('./ws-server');
-handleServerUpgrade(server);
+const wsServerBind = require('./ws-server');
+wsServerBind(server);

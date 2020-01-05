@@ -37,14 +37,14 @@ function initSecure(secure){
   }
   if(isOtherCanRW(myPath)){
     // like ssh
-    return `The '${k}' file permission is too open. Pleace use commond 'chmod 400 ${myPath}' to limit it.`;
+    return `The '${k}' file permission is too open. Pleace use commond like: 'chmod 400 ${myPath}' to limit it.`;
   }
 
   let realKey = k.substr(0, k.lastIndexOf('Path'));
   let content = _readPrivate(myPath);
   if(content === false){
     // 'requires elevated privileges' get from express/www
-    return `The '${k}' requires elevated privileges. Pleace use command like 'chown linux-remote ${myPath}' to enable linux-remote to read.`;
+    return `The '${k}' requires elevated privileges. Pleace use command like: 'setfacl -m u:linux-remote:r ${myPath}' to enable linux-remote to read.`;
   }
 
   secure[realKey] = content;

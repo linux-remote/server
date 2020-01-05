@@ -1,4 +1,5 @@
 
+const http = require('http');
 var ONE_YEAR_SECOND  = 60 * 60 * 24 * 365;
 
 exports.CORS = function(req, res, next) {
@@ -38,7 +39,7 @@ exports.errHandle = function(err, req, res, next) {
   setTimeout(() => {
     if(req.complete){
       res.status(err.status || 400);
-      res.end(err.message || '');
+      res.end(err.message || http.STATUS_CODES[err.status] || '');
     } else {
       // eg: upload , stop immediately
       req.destroy();

@@ -9,6 +9,7 @@ const bodyParser = require('body-parser');
 
 const middleWare = require('./common/middleware');
 const mountClient = require('./lib/mount-client');
+const { sessionMid } = require('./lib/session');
 const login = require('./api/login');
 
 const app = express();
@@ -39,8 +40,8 @@ app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
-
-app.get('/api/loginedList', login.loginedList);
+app.use(sessionMid);
+app.get('/api/loggedInList', login.loggedInList);
 app.post('/api/login',  login.login);
 app.post('/api/logout',  login.logout);
 
