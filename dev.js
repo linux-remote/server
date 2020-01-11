@@ -1,13 +1,14 @@
 
 // 本地开发启动。
 const path = require('path');
-var linuxRemoteServer = require('./index');
+var createServer = require('./index');
+const watchHere = require('../../watch-here/index');
 
-linuxRemoteServer({
-  port: 3000,
-  userServerMain: path.join(__dirname, '../user-server/watcher.js'),
-  ssl: false,
-  cookieSecure: false,
-  xPoweredBy: false,
-  loginBinPath: '/home/dw/c-out/lr-login'
+watchHere({
+  dir: path.join(__dirname, 'src'),
+  name: 'lr-entrance',
+  run(){
+    createServer(path.join(__dirname, './dev.config.js'));
+  }
 });
+

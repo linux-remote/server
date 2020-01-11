@@ -15,7 +15,10 @@
     "_devInstall": "cnpm i --by=npm --no-bin-links",
     "linuxIpty": "npm install node-pty --save --no-bin-links"
   },
-  "files": ["src", "index.js"],
+  "files": [
+    "src",
+    "index.js"
+  ],
   "dependencies": {
     "body-parser": "^1.18.3",
     "cookie-parser": "~1.4.3",

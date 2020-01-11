@@ -52,6 +52,6 @@ function wsInitSessUser(req, username, callback){
 module.exports = {
   initSession,
   sessionMid,
-  getWsSessUser,
+  wsInitSessUser,
   initSessUser
 };
