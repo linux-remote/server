@@ -43,3 +43,4 @@ jspm_packages
 /.npmrc
 /.npmrc2
 /desktop.ini
+/test/tmp.js

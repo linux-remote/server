@@ -1,58 +1,33 @@
 
-// Entry
-const http = require('http');
-const https = require('https');
-
-const { initSecure } = require('./src/lib/secure');
-
-function def(obj, key, value){
-  if(obj[key] === undefined){
-    obj[key] = value;
-  }
+const os = require('os');
+const path = require('path');
+if(os.userInfo().username !== 'linux-remote'){
+  console.error(`linux-remote must start by the 'linux-remote' user.`);
+  process.exit(1);
 }
 
-function createServer(confPath){
-  const conf = require(confPath);
-  global.CONF = conf;
-  
-  def(conf, 'xPoweredBy', false);
-  def(conf, 'appTrustProxy', false);
-  const app = require('./src/app');
-  
-  app.set('port', conf.port);
-  
-  let server;
-  const secure = conf.secure;
-  if(conf.secure){
-    let errMsg = initSecure(conf.secure);
-    if(errMsg){
-      console.error(errMsg);
-      process.exit(1);
-    }
-  
-    server = https.createServer(secure, app);
-    
-  }else{
-    server = http.createServer(app);
+const { spawn } = require('child_process');
+const sessions = require('./src/session');
+const ipc = require('./src/ipc');
+
+module.exports = function({entranceServerPath, userServerPath, loginBinPath}){
+
+  global.CONF = {
+    userServerPath,
+    loginBinPath
   }
   
-  server.listen(conf.port);
-  
-  server.on('listening', function(){
-    console.log('[lr-entrance]: Server start!');
-    console.log('Listening on ' + conf.port);
-    console.log('NODE_ENV ' + process.env.NODE_ENV);
+  sessions.init();
+
+  const entranceProcess = spawn(process.argv[0], [entranceServerPath], {
+    stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
+    cwd: path.dirname(entranceServerPath) 
   });
-  
-  server.on('error', function(err){
-    if (err.code === 'EADDRINUSE') {
-      console.error('port ' + conf.port + ' is already in use.');
-      process.exit(1);
-    }
-    throw err;
+
+  ipc(entranceProcess);
+
+  process.on('exit', function(){
+    sessions.clearUp();
   });
-  
-  const wsNoServer = require('./src/ws-server');
-  wsNoServer(server);
+
 }
-module.exports = createServer;
