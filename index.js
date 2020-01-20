@@ -10,7 +10,7 @@ const { spawn } = require('child_process');
 const sessions = require('./src/session');
 const ipc = require('./src/ipc');
 
-module.exports = function({entranceServerPath, userServerPath, loginBinPath}){
+module.exports = function({serverPath, userServerPath, loginBinPath}){
 
   global.CONF = {
     userServerPath,
@@ -19,15 +19,21 @@ module.exports = function({entranceServerPath, userServerPath, loginBinPath}){
   
   sessions.init();
 
-  const entranceProcess = spawn(process.argv[0], [entranceServerPath], {
+  const serverProcess = spawn(process.argv[0], [serverPath], {
     stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
-    cwd: path.dirname(entranceServerPath) 
+    cwd: path.dirname(serverPath)
   });
 
-  ipc(entranceProcess);
+  ipc(serverProcess);
 
+  ['SIGINT', 'SIGTERM', 'SIGHUP'].forEach(k => {
+    process.on(k, () => {
+      process.exit();
+    })
+  })
   process.on('exit', function(){
     sessions.clearUp();
+    serverProcess.kill();
   });
 
 }

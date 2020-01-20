@@ -3,15 +3,15 @@ const startUserServer = require('./start-user-server');
 const { genSid, hashSid, getSession, _setNewSession, delSession } = require('./session');
 
 
-function ipc(entranceProcess){
+function ipc(serverProcess){
 
   
-  entranceProcess.on('message', function(msgObj){
+  serverProcess.on('message', function(msgObj){
 
     function _send(sendData){
       if(sendData){
         sendData.id = msgObj.id;
-        entranceProcess.send(sendData);
+        serverProcess.send(sendData);
       }
     }
 

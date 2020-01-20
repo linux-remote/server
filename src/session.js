@@ -2,7 +2,7 @@
 const crypto = require('crypto');
 
 const fs = require('fs');
-const {execSync} = require('child_process');
+const {execSync, exec} = require('child_process');
 const os = require('os');
 const path = require('path');
 const uidSafe = require('uid-safe');
@@ -41,8 +41,8 @@ function initSidHashMap(tmpPath){
 
 
 function init(){
-  execSync('rm -rf ' + socketTmpPath);
-  execSync('mkdir -m=1773 -- ' + socketTmpPath);
+  execSync('rm -rf ' + socketTmpPath + ' && ' 
+  + 'mkdir -m=1773 -- ' + socketTmpPath);
   sidHashMap = initSidHashMap(socketTmpPath);
 }
 
@@ -52,8 +52,8 @@ function clearUp(){
   execSync('rm -rf ' + socketTmpPath);
 }
 
-function getTmpName(sidHash, username){
-  return `${socketTmpPath}/${sidHash}.${username}`;
+function getUserTmpDir(sidHash, username){
+  return `${socketTmpPath}/${sidHash}.${username}/`;
 }
 
 function hashSid(sid){
@@ -90,6 +90,10 @@ function _setNewSession(sid, _hashedSid, username, term){
   const userMap = new Map([[username, {term}]]);
   _setSidMap(sid, _hashedSid, userMap);
   sidHashMap.set(_hashedSid, userMap);
+  term.once('exit', function(){
+    term._is_exit = true;
+    delSession(sid, username);
+  })
 }
 
 function _setSidMap(sid, hash, userMap){
@@ -137,20 +141,30 @@ function middleware(req, res, next){
 
   next();
 }
-function upUserNow(userMap, username){
-  userMap.set(username, Date.now());
-}
+
 function delSession(sid, username){
   const session = getSession(sid);
   if(session){
     const userMap = session.userMap;
     const user = userMap.get(username);
     if(user){
-      user.term.kill();
+      if(!user.term._is_exit){
+        user.term.kill();
+      }
       userMap.delete(username);
-      // if(userMap.size === 0){
+      
+      // fs clear.
+      const userTmpDir = getUserTmpDir(session.hash, username);
+      exec(`rm -rf ${userTmpDir}`, function(err){
+        if(err){
+          console.error('clear user tmpdir fail:', userTmpDir);
+        }
+      });
 
-      // }
+    }
+    if(userMap.size === 0){
+      sidMap.delete(session.id);
+      sidHashMap.delete(session.hash);
     }
   }
 }
@@ -165,6 +179,5 @@ module.exports = {
   delSession,
   setCookie,
   middleware,
-  getTmpName,
-  upUserNow
+  getUserTmpDir
 }

@@ -1,5 +1,5 @@
 {
-  "name": "linux-remote-server",
+  "name": "linux-remote-session-store",
   "version": "2.0.7",
   "author": {
     "name": "Du Wei",
@@ -8,7 +8,7 @@
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "git@github.com:linux-remote/server.git"
+    "url": "git@github.com:linux-remote/session-store.git"
   },
   "scripts": {
     "sulr": "sudo su linux-remote --shell=/bin/bash",
