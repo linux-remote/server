@@ -16,13 +16,13 @@
     "_devInstall": "cnpm i --by=npm --no-bin-links",
     "linuxIpty": "npm install node-pty --save --no-bin-links"
   },
-  "files": ["src", "index.js"],
+  "files": [
+    "src",
+    "index.js"
+  ],
+  "engines" : { "node" : ">=12.14.0" },
   "dependencies": {
-    "node-pty": "^0.8.1",
-    "uid-safe": "^2.1.5"
-  },
-  "devDependencies": {
-    "babel-eslint": "^7.2.3",
-    "eslint": "^5.15.3"
+    "base64-2-safe": "^1.0.2",
+    "node-pty": "^0.9.0"
   }
 }
