@@ -1,17 +1,31 @@
+const { spawn } = require('child_process');
+
 const login = require('./login');
 const startUserServer = require('./start-user-server');
-const { genSid, hashSid, getSession, _setNewSession, delSession } = require('./session');
+const  session = require('./session.js');
+session.init();
+const { genSid, hashSid, getSession, _setNewSession, delSession } = session;
 
+let serverProcess;
+
+function spwanServer(){
+  serverProcess = spawn(process.argv[0], [global.CONF.serverPath], {
+    stdio: ['inherit', 'inherit', 'inherit', 'ipc']
+  });
+  ipc(serverProcess);
+  return serverProcess;
+}
+
+spwanServer();
 
 function ipc(serverProcess){
 
-  
   serverProcess.on('message', function(msgObj){
 
-    function _send(sendData){
+    function _send(sendData, callback){
       if(sendData){
         sendData.id = msgObj.id;
-        serverProcess.send(sendData);
+        serverProcess.send(sendData, callback);
       }
     }
 
@@ -21,10 +35,16 @@ function ipc(serverProcess){
       _handleMsgLogout(msgObj.data, _send);
     } else if(msgObj.type === 'getSession'){
       _handleMsgGetSession(msgObj.data, _send);
+    } else if(msgObj.type === 'reloadServer'){
+      if(serverProcess){
+        _send({
+          data: 'ok'
+        })
+        serverProcess.disconnect();
+        spwanServer();
+      }
     }
-    
-  })
-
+  });
 }
 
 function _handleMsgLogin(data, send){
@@ -97,4 +117,10 @@ function loginAndStartUserServer({username, password, ip}, callback){
   });
 }
 
-module.exports = ipc;
+process.on('exit', function(){
+  if(serverProcess){
+    serverProcess.disconnect();
+  }
+});
+
+// module.exports = spwanServer;
