@@ -61,7 +61,7 @@ function hashSid(sid){
   let hash = crypto.createHash('sha256').update(sid).digest('base64');
   return base64ToSafe(hash);
 }
-function genSid(){
+function genSidAndHash(){
   // node uuid/v4 equal crypto.randomBytes(16).toString('hex');
   // https://github.com/kelektiv/node-uuid/blob/master/lib/rng.js
   // npm use UUID as token.
@@ -79,12 +79,12 @@ function genSid(){
   sid = sortTime + sid + index;
 
   // if(sidMap.size === sidHashMap.size && sidMap.has(sid)){
-  //   return genSid();
+  //   return genSidAndHash();
   // }
 
   const hash = hashSid(sid);
   // if(sidHashMap.has(hash)){
-  //   return genSid();
+  //   return genSidAndHash();
   // }
 
   index = index + 1;
@@ -181,7 +181,7 @@ function delSession(sid, username){
 module.exports = {
   init,
   clearUp,
-  genSid,
+  genSidAndHash,
   _setNewSession,
   hashSid,
   getSession,

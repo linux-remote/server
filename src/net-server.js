@@ -8,7 +8,7 @@ const startUserServer = require('./start-user-server.js');
 
 const  session = require('./session.js');
 session.init();
-const { genSid, hashSid, getSession, _setNewSession, delSession } = session;
+const { genSidAndHash,  getSession, _setNewSession, delSession } = session;
 
 const PORT = os.tmpdir() + '/linux-remote-session-store.sock';
 
@@ -17,7 +17,7 @@ const netServer = net.createServer(function connectionListener(socket){
   handleSocket(socket);
 });
 
-netServer.maxConnections = 2;
+// netServer.maxConnections = 2;
 netServer.listen(PORT);
 
 let timer, child;
@@ -128,8 +128,9 @@ function loginAndStartUserServer({username, password, ip}, callback){
         return callback(err);
       }
 
-      const newSid = genSid();
-      const newSidHash = hashSid(newSid);
+      const sidObj = genSidAndHash();
+      const newSid = sidObj.sid;
+      const newSidHash = sidObj.hash;
       startUserServer(term, newSidHash, username, function(err) {
         if(err) {
           return callback(err);
