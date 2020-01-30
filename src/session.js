@@ -4,6 +4,19 @@ const { execSync } = require('child_process');
 const os = require('os');
 const path = require('path');
 const base64ToSafe = require('base64-2-safe');
+/*
+sidMap: 
+	key: sid
+	value: { hash, userMap}
+sidHashMap:
+	key: hash
+	value: userMap
+
+userMap
+	key: username
+	value: {term, _autoDelTimer, otherData}
+ */
+
 const sortTimeStartPoint = 1579660004551; // 2020/01/22
 const sortTime = Date.now() - sortTimeStartPoint;
 let index = 1;
@@ -96,13 +109,15 @@ function genSidAndHash(){
 
 
 function _setNewSession(sid, _hashedSid, username, term){
-  const userMap = new Map([[username, {term}]]);
+  const user = {term};
+  const userMap = new Map([[username, user]]);
   _setSidMap(sid, _hashedSid, userMap);
   sidHashMap.set(_hashedSid, userMap);
   term.once('exit', function(){
     term._is_exit = true;
     delSession(sid, username);
-  })
+  });
+  return user;
 }
 
 function _setSidMap(sid, hash, userMap){
@@ -178,6 +193,27 @@ function delSession(sid, username){
   }
 }
 
+function getUserByHash(hash, username){
+  const userMap = sidHashMap.get(hash);
+  if(userMap){
+    return userMap.get(username);
+  }
+}
+
+function getUser(sid, username){
+  const sess = sidMap.get(sid);
+  if(sess.userMap){
+    return sess.userMap.get(username);
+  }
+}
+
+function getUserHash(sid){
+  const sess = sidMap.get(sid);
+  if(sess){
+    return sess.hash;
+  }
+}
+
 module.exports = {
   init,
   clearUp,
@@ -187,5 +223,8 @@ module.exports = {
   getSession,
   delSession,
   setCookie,
-  middleware
+  middleware,
+  getUserByHash,
+  getUser,
+  getUserHash
 }

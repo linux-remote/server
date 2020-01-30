@@ -12,9 +12,9 @@ function login(opts) {
 
   const callback = opts.end;
 
-  console.log('term.once,', term.once);
-  console.log('\nterm.process', term.process);
-  console.log('term.pid', term.pid, '\n');
+  console.info('term.once,', term.once);
+  console.info('\nterm.process', term.process);
+  console.info('term.pid', term.pid, '\n');
 
   let isEnd = false;
   let timer;
