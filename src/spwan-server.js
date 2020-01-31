@@ -4,7 +4,7 @@ const login = require('./login');
 const startUserServer = require('./start-user-server');
 const  session = require('./session.js');
 session.init();
-const { genSid, hashSid, getSession, _setNewSession, delSession } = session;
+const { genSidAndHash,  getSession, _setNewSession, delSession } = session;
 
 let serverProcess;
 
@@ -46,7 +46,6 @@ function ipc(serverProcess){
     }
   });
 }
-
 function _handleMsgLogin(data, send){
   loginAndStartUserServer(data, function(err, result){
     if(err){
@@ -99,8 +98,9 @@ function loginAndStartUserServer({username, password, ip}, callback){
         return callback(err);
       }
 
-      const newSid = genSid();
-      const newSidHash = hashSid(newSid);
+      const sidObj = genSidAndHash();
+      const newSid = sidObj.sid;
+      const newSidHash = sidObj.hash;
       startUserServer(term, newSidHash, username, function(err) {
         if(err) {
           return callback(err);
