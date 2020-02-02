@@ -60,14 +60,15 @@ function _handleMsgLogin(data, send){
       status: 'success',
       data: result
     });
-  })
+  });
+
 }
 
 function _handleMsgLogout({sid, username}, send){
   delSession(sid, username);
   send({
     status: 'success'
-  })
+  });
 }
 
 function _handleMsgGetSession(sid, send){

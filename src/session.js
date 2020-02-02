@@ -140,11 +140,12 @@ function getSession(sid){
   }
 }
 
-function setCookie(res, sid, cookieSecure){
-  res.cookie('lr_sid', sid, {
+function setCookie(res, sid, cookie){
+  res.cookie('sid', sid, {
     httpOnly: true,
     path: '/api',
-    secure: cookieSecure
+    secure: cookie.secure,
+    sameSite: cookie.sameSite
   });
 }
 
