@@ -140,15 +140,6 @@ function getSession(sid){
   }
 }
 
-function setCookie(res, sid, cookie){
-  res.cookie('sid', sid, {
-    httpOnly: true,
-    path: '/api',
-    secure: cookie.secure,
-    sameSite: cookie.sameSite
-  });
-}
-
 function middleware(req, res, next){
   const sid = req.cookies.sid;
   const session = getSession(sid);
@@ -223,7 +214,6 @@ module.exports = {
   hashSid,
   getSession,
   delSession,
-  setCookie,
   middleware,
   getUserByHash,
   getUser,
