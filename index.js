@@ -13,4 +13,4 @@ global.CONF = {
   loginBinPath: env.LR_LOGIN_BIN_PATH,
 }
 
-require('./src/spwan-server.js');
+require('./src/net-server.js');

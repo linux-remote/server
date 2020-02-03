@@ -1,31 +1,64 @@
-const { spawn } = require('child_process');
+const net = require('net');
+const os = require('os');
+const fs = require('fs');
 
-const login = require('./login');
-const startUserServer = require('./start-user-server');
+const login = require('./login.js');
+const startServer = require('./start-server.js');
+const startUserServer = require('./start-user-server.js');
+
 const  session = require('./session.js');
 session.init();
 const { genSidAndHash,  getSession, _setNewSession, delSession } = session;
 
-let serverProcess;
+const PORT = os.tmpdir() + '/linux-remote-session-store.sock';
 
-function spwanServer(){
-  serverProcess = spawn(process.argv[0], [global.CONF.serverPath], {
-    stdio: ['inherit', 'inherit', 'inherit', 'ipc']
-  });
-  ipc(serverProcess);
-  return serverProcess;
-}
+const netServer = net.createServer(function connectionListener(socket){
+  socket.setEncoding('utf-8');
+  handleSocket(socket);
+});
 
-spwanServer();
+// netServer.maxConnections = 2;
+netServer.listen(PORT);
 
-function ipc(serverProcess){
+let child;
+// let timer;
+netServer.on('listening', function(){
+  fs.chmodSync(PORT, 0o600);
+  child = startServer();
+  // timer = setTimeout(function(){
+  //   console.error('Server connect timeout.');
+  //   child.kill();
+  //   process.exit(1);
+  // }, 5000);
+});
 
-  serverProcess.on('message', function(msgObj){
+// netServer.once('connection', function(){
+//   clearTimeout(timer);
+// });
 
-    function _send(sendData, callback){
+netServer.on('error', (err) => {
+  netServer.close();
+  if (err.code === 'EADDRINUSE') {
+    fs.unlinkSync(PORT);
+    netServer.listen(PORT);
+    return;
+  }
+  throw err;
+});
+
+
+
+function handleSocket(socket){
+
+  socket.on('data', function(msg){
+    const msgObj = JSON.parse(msg);
+
+    function _send(sendData){
       if(sendData){
-        sendData.id = msgObj.id;
-        serverProcess.send(sendData, callback);
+        if(sendData.id !== undefined){
+          sendData.id = msgObj.id;
+        }
+        socket.write(JSON.stringify(sendData));
       }
     }
 
@@ -36,16 +69,17 @@ function ipc(serverProcess){
     } else if(msgObj.type === 'getSession'){
       _handleMsgGetSession(msgObj.data, _send);
     } else if(msgObj.type === 'reloadServer'){
-      if(serverProcess){
-        _send({
-          data: 'ok'
-        })
-        serverProcess.disconnect();
-        spwanServer();
-      }
+      socket.end(function(){
+        child.kill();
+        child = startServer();
+      });
+    } else {
+      socket.destroy();
     }
   });
 }
+
+
 function _handleMsgLogin(data, send){
   loginAndStartUserServer(data, function(err, result){
     if(err){
@@ -118,10 +152,10 @@ function loginAndStartUserServer({username, password, ip}, callback){
   });
 }
 
-process.on('exit', function(){
-  if(serverProcess){
-    serverProcess.disconnect();
-  }
-});
+// process.on('exit', function(){
+//   if(serverProcess){
+//     serverProcess.kill();
+//   }
+// });
 
-// module.exports = spwanServer;
+module.exports = netServer;
