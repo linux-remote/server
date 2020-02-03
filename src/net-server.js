@@ -1,5 +1,4 @@
 const net = require('net');
-const os = require('os');
 const fs = require('fs');
 
 const login = require('./login.js');
@@ -10,7 +9,7 @@ const  session = require('./session.js');
 session.init();
 const { genSidAndHash,  getSession, _setNewSession, delSession } = session;
 
-const PORT = os.tmpdir() + '/linux-remote-session-store.sock';
+const PORT = global.__TMP_DIR__ + '/linux-remote-session-store.sock';
 
 const netServer = net.createServer(function connectionListener(socket){
   socket.setEncoding('utf-8');

@@ -1,7 +1,6 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const { execSync } = require('child_process');
-const os = require('os');
 const path = require('path');
 const base64ToSafe = require('base64-2-safe');
 /*
@@ -25,7 +24,7 @@ const sidMap = new Map();
 let sidHashMap;
 
 // https://developpaper.com/question/will-building-unix-sockets-in-dev-shm-improve-performance/
-let socketTmpPath = path.join(os.tmpdir(), 'linux-remote');
+let socketTmpPath = path.join(global.__TMP_DIR__, 'linux-remote');
 
 // user
 // group
