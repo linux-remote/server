@@ -1,5 +1,6 @@
 const net = require('net');
 const fs = require('fs');
+const SocketRequest = require('../../socket-request/index.js');
 
 const login = require('./login.js');
 const startServer = require('./start-server.js');
@@ -13,6 +14,7 @@ const PORT = global.__TMP_DIR__ + '/linux-remote-session-store.sock';
 
 const netServer = net.createServer(function connectionListener(socket){
   socket.setEncoding('utf-8');
+  socket.setNoDelay(true);
   handleSocket(socket);
 });
 
@@ -48,13 +50,31 @@ netServer.on('error', (err) => {
 
 
 function handleSocket(socket){
-
+  const sr = new SocketRequest(socket);
+  sr.onRequest = function(msgObj, reply){
+    console.log('onRequest', msgObj);
+    if(msgObj.type === 'login'){
+      _handleMsgLogin(msgObj.data, reply);
+    } else if(msgObj.type === 'logout'){
+      _handleMsgLogout(msgObj.data, reply);
+    } else if(msgObj.type === 'getSession'){
+      _handleMsgGetSession(msgObj.data, reply);
+    } else if(msgObj.type === 'reloadServer'){
+      socket.end(function(){
+        child.kill();
+        child = startServer();
+      });
+    } else {
+      socket.destroy();
+    }
+  }
+  /*
   socket.on('data', function(msg){
     const msgObj = JSON.parse(msg);
-
+    
     function _send(sendData){
       if(sendData){
-        if(sendData.id !== undefined){
+        if(msgObj.id !== undefined){
           sendData.id = msgObj.id;
         }
         socket.write(JSON.stringify(sendData));
@@ -75,7 +95,7 @@ function handleSocket(socket){
     } else {
       socket.destroy();
     }
-  });
+  });*/
 }
 
 
