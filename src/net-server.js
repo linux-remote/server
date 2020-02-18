@@ -52,7 +52,7 @@ netServer.on('error', (err) => {
 function handleSocket(socket){
   const sr = new SocketRequest(socket);
   sr.onRequest = function(msgObj, reply){
-    console.log('onRequest', msgObj);
+    // console.log('onRequest', msgObj);
     if(msgObj.type === 'login'){
       _handleMsgLogin(msgObj.data, reply);
     } else if(msgObj.type === 'logout'){
