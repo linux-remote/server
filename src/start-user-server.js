@@ -46,7 +46,7 @@ function startUserServer(term, newSidHash, username, callback) {
 }
 
 function _getErrMsg(_str){
-  let str = _str.substr(0, str.indexOf(ERR_FLAG_END));
+  let str = _str.substr(0, _str.indexOf(ERR_FLAG_END));
   let startIndex = str.indexOf(ERR_FLAG_START);
   if(startIndex !== -1){
     str = str.substr(startIndex + 1);
