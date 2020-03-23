@@ -17,4 +17,16 @@ global.CONF = {
   loginBinPath: env.LR_LOGIN_BIN_PATH,
 }
 
-require('./src/net-server.js');
+const handlePIC = require('./src/handle-ipc.js');
+const startServer = require('./src/start-server.js');
+
+let serverProcess;
+function spwanServer(){
+  serverProcess = startServer();
+  handlePIC(serverProcess);
+  serverProcess.on('disconnect', () => {
+    spwanServer();
+  });
+}
+
+spwanServer();
