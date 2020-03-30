@@ -40,6 +40,7 @@ function startUserServer(term, newSidHash, username, callback) {
 
   term.addListener('data', handleTermData);
   timer = setTimeout(function(){
+    timer = null;
     end(new Error('[lr-user-server]: Start-up timeout.'));
   }, 5000);
 

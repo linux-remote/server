@@ -1,7 +1,11 @@
 
 const pty = require('node-pty');
-const { getFirstLine, escapeInjection } = require('./util');
+const { escapeInjection } = require('./util');
 const os = require('os');
+function killLoginTerm(term){
+  // Fixed: Login timed out after 60 seconds.
+  term.write('\u0003');
+}
 function login(opts) {
   const username = escapeInjection(opts.username);
   // username can't see in `top -c -b`
@@ -12,9 +16,8 @@ function login(opts) {
 
   const callback = opts.end;
 
-  console.info('term.once,', term.once);
-  console.info('\nterm.process', term.process);
-  console.info('term.pid', term.pid, '\n');
+  // console.info('\nterm.process', term.process);
+  // console.info('term.pid', term.pid, '\n');
 
   let isEnd = false;
   let timer;
@@ -28,7 +31,7 @@ function login(opts) {
     isEnd = true;
 
     if(err) {
-      term.kill();
+      killLoginTerm(term);
       callback(err);
     } else {
       callback(null, output);
@@ -70,7 +73,7 @@ function login(opts) {
         })
       } else if(data.indexOf(os.hostname() + ' login:') !== -1){
         end({
-          name: getFirstLine(output),
+          name: 'loginError',
           message: 'Login incorrect'
         })
       }
@@ -87,6 +90,7 @@ function login(opts) {
     term.write(password + '\n');
     term.addListener('data', handleData);
     timer = setTimeout(() => {
+      timer = null;
       end({
         name: 'loginError',
         message: 'Login timeout'
@@ -94,7 +98,9 @@ function login(opts) {
     }, 5000);
   });
   term.on('error', end);
-  
+  // term.on('exit', function(){
+  //   console.info('\n----------- term exit -----------\n');
+  // });
   return term;
 }
 
