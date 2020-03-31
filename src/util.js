@@ -1,11 +1,11 @@
 // on Sep 22, 2018 copyright https://github.com/hezedu/SomethingBoring/blob/master/algorithm/DebounceTime.js 
 // unmidify
 
-function getFirstLine(stdout){
-  stdout = stdout.trimLeft();
-  const i = stdout.indexOf('\n');
-  return stdout.substr(0, i);  
-}
+// function getFirstLine(stdout){
+//   stdout = stdout.trimLeft();
+//   const i = stdout.indexOf('\n');
+//   return stdout.substr(0, i);  
+// }
 
 function escapeInjection(userInput) {
   return userInput.replace(/\n|\r|`|"|'/g, (mstr) => {
@@ -60,7 +60,7 @@ function genUserServerFlag(){
 }
 
 module.exports = {
-  getFirstLine,
+  // getFirstLine,
   escapeInjection,
   safeWrap,
   genUserServerFlag
