@@ -1,6 +1,6 @@
 {
   "name": "@linux-remote/session-store",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "author": {
     "name": "Du Wei",
     "email": "hezedu@hotmail.com"
@@ -11,9 +11,6 @@
     "url": "git@github.com:linux-remote/session-store.git"
   },
   "scripts": {
-    "sulr": "sudo su linux-remote --shell=/bin/bash",
-    "start": "node dev.js",
-    "_devInstall": "cnpm i --by=npm --no-bin-links",
     "linuxIpty": "npm install node-pty --save --no-bin-links"
   },
   "files": [
