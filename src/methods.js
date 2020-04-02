@@ -85,5 +85,9 @@ function loginAndStartUserServer({username, password, ip}, callback){
 
 module.exports = {
   login: _handleMsgLogin,
-  getSession: _handleMsgGetSession
+  getSession: _handleMsgGetSession,
+  exit: function(errMsg){
+    console.error('Error: ' + errMsg);
+    process.exit();
+  }
 };
