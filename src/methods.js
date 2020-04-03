@@ -89,5 +89,8 @@ module.exports = {
   exit: function(errMsg){
     console.error('Error: ' + errMsg);
     process.exit();
+  },
+  serverListened: function(){
+    global.__is_server_listened = true;
   }
 };
