@@ -108,14 +108,21 @@ function genSidAndHash(){
 
 
 function _setNewSession(sid, _hashedSid, username, term){
-  const user = {term};
-  const userMap = new Map([[username, user]]);
+  const userMap = new Map();
   _setSidMap(sid, _hashedSid, userMap);
   sidHashMap.set(_hashedSid, userMap);
+  const user = setNewUser(sid, userMap, username, term);
+  return user;
+}
+
+function setNewUser(sid, userMap, username, term){
+  const user = {term};
+  userMap.set(username, user);
   term.once('exit', function(){
     term._is_exit = true;
     delSession(sid, username);
   });
+
   return user;
 }
 
@@ -139,23 +146,7 @@ function getSession(sid){
   }
 }
 
-function middleware(req, res, next){
-  const sid = req.cookies.sid;
-  const session = getSession(sid);
-  if(session){
-    const userMap = session.userMap;
-    req.session = {
-      id: sid,
-      userMap,
-      hash: session.hash,
-      hasUser: userMap && userMap.size !== 0
-    }
-  } else {
-    req.session = Object.create(null);
-  }
 
-  next();
-}
 
 function delSession(sid, username){
   const session = getSession(sid);
@@ -198,12 +189,6 @@ function getUser(sid, username){
   }
 }
 
-function getUserHash(sid){
-  const sess = sidMap.get(sid);
-  if(sess){
-    return sess.hash;
-  }
-}
 
 module.exports = {
   init,
@@ -213,8 +198,7 @@ module.exports = {
   hashSid,
   getSession,
   delSession,
-  middleware,
   getUserByHash,
   getUser,
-  getUserHash
+  setNewUser
 }

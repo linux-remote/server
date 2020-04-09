@@ -4,7 +4,7 @@ const startUserServer = require('./start-user-server.js');
 
 const  session = require('./session.js');
 session.init();
-const { genSidAndHash,  getSession, _setNewSession /*, delSession*/ } = session;
+const { genSidAndHash,  getSession, _setNewSession, setNewUser /*, delSession*/ } = session;
 
 function _handleMsgLogin(data, send){
   loginAndStartUserServer(data, function(err, result){
@@ -40,8 +40,8 @@ function _handleMsgGetSession(sid, send){
   send(sendData);
 }
 
-function loginAndStartUserServer({username, password, ip}, callback){
-  
+function loginAndStartUserServer({username, password, sid, ip}, callback){
+
   const term = login({
     username,
     password,
@@ -51,19 +51,31 @@ function loginAndStartUserServer({username, password, ip}, callback){
       if(err){
         return callback(err);
       }
-
-      const sidObj = genSidAndHash();
-      const newSid = sidObj.sid;
-      const newSidHash = sidObj.hash;
-      startUserServer(term, newSidHash, username, function(err) {
+      let usersid, userHash, userMap;
+      if(!sid){
+        const sidObj = genSidAndHash();
+        usersid = sidObj.sid;
+        userHash = sidObj.hash;
+      } else {
+        const session = getSession(sid);
+        usersid = sid;
+        userHash = session.hash;
+        userMap = session.userMap;
+      }
+      startUserServer(term, userHash, username, function(err) {
         if(err) {
           return callback(err);
         }
-        _setNewSession(newSid, newSidHash, username, term);
+        if(sid){
+          setNewUser(usersid, userMap, username, term);
+        } else {
+          _setNewSession(usersid, userHash, username, term);
+        }
+        
         callback(null, {
           // output, 
-          sid: newSid,
-          sidHash: newSidHash
+          sid: usersid,
+          sidHash: userHash
         })
       });
 
