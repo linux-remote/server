@@ -1,6 +1,6 @@
 
 const os = require('os');
-
+const {execSync} = require('child_process');
 const env = process.env;
 // Protect my disk
 global.__TMP_DIR__ = (env.NODE_ENV === 'production') ? os.tmpdir() : '/dev/shm';
@@ -37,3 +37,22 @@ function spwanServer(){
 }
 
 spwanServer();
+console.log('process pid', process.pid);
+let isSighup = false;
+process.on('SIGHUP', function(){
+  console.log('process SIGHUP');
+  isSighup = true;
+  process.exit();
+})
+
+process.on('exit', function(){
+  if(isSighup){
+    serverProcess.kill();
+    const argsvs = process.argv.join(' ')
+    console.log('Restarting...' + argsvs);
+    execSync(argsvs, {
+      stdio: 'inherit'
+    });
+    console.log('Restarted');
+  }
+})

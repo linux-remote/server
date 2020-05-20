@@ -98,10 +98,6 @@ function loginAndStartUserServer({username, password, sid, ip}, callback){
 module.exports = {
   login: _handleMsgLogin,
   getSession: _handleMsgGetSession,
-  exit: function(errMsg){
-    console.error('Error: ' + errMsg);
-    process.exit();
-  },
   serverListened: function(){
     global.__is_server_listened = true;
   }
