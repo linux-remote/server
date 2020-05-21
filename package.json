@@ -1,6 +1,6 @@
 {
-  "name": "@linux-remote/session-store",
-  "version": "4.2.1",
+  "name": "@linux-remote/server",
+  "version": "4.3.0",
   "author": {
     "name": "Du Wei",
     "email": "hezedu@hotmail.com"
