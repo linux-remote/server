@@ -22,11 +22,16 @@ const handlePIC = require('./src/handle-ipc.js');
 const startServer = require('./src/start-server.js');
 
 let serverProcess;
+let isRestart = false;
 function spwanServer(){
 
   serverProcess = startServer();
   handlePIC(serverProcess);
   serverProcess.on('disconnect', () => {
+    if(isRestart){
+      return;
+    }
+    console.log('serverProcess disconnect')
     // Fixed: https://github.com/linux-remote/linux-remote/issues/226
     if(!global.__is_server_listened){
       process.exit(1);
@@ -37,22 +42,8 @@ function spwanServer(){
 }
 
 spwanServer();
-console.log('process pid', process.pid);
-let isSighup = false;
-process.on('SIGHUP', function(){
-  console.log('process SIGHUP');
-  isSighup = true;
-  process.exit();
-})
 
-process.on('exit', function(){
-  if(isSighup){
-    serverProcess.kill();
-    const argsvs = process.argv.join(' ')
-    console.log('Restarting...' + argsvs);
-    execSync(argsvs, {
-      stdio: 'inherit'
-    });
-    console.log('Restarted');
-  }
-})
+process.on('SIGHUP', function(){
+  isRestart = true;
+  serverProcess.kill();
+});
