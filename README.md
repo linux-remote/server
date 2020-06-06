@@ -1,5 +1,11 @@
-# linux-remote-server
-## 开发
-`npm install nodemon -g`
+# server 
+## Development
+### Install
+In linux VM:
+`npm rm vminstall`
 
-`npm install --no-bin-links`
+Other:
+`npm install --only=dev`
+
+### Start
+`node dev.js`

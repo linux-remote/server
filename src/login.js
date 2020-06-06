@@ -4,7 +4,9 @@ const { escapeInjection } = require('./util');
 const os = require('os');
 function killLoginTerm(term){
   // Fixed: Login timed out after 60 seconds.
-  term.write('\u0003');
+  // use socket.destroy replace width write \u0003 2020/06/05
+  // term.write('\u0003');
+  term._socket.destroy();
 }
 function login(opts) {
   const username = escapeInjection(opts.username);

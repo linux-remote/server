@@ -1,13 +1,12 @@
 
 const login = require('./login.js');
-const startUserServer = require('./start-user-server.js');
-
+const startUserProcess = require('./start-user.js');
 const  session = require('./session.js');
-session.init();
-const { genSidAndHash,  getSession, _setNewSession, setNewUser /*, delSession*/ } = session;
+
+const { genSid,  addSession, addUser, triggerOnceToken, all } = session;
 
 function _handleMsgLogin(data, send){
-  loginAndStartUserServer(data, function(err, result){
+  loginAndStartUserProcess(data, function(err, result){
     if(err){
       send({
         status: 'error',
@@ -24,80 +23,74 @@ function _handleMsgLogin(data, send){
 
 }
 
-function _handleMsgGetSession(sid, send){
-  const session = getSession(sid);
-  let sendData = {
-    status: 'success',
-  }
-  if(session){
-    sendData.data = {
-      hash: session.hash,
-      users: Array.from(session.userMap.keys())
-    }
-  } else {
-    sendData.data = null;
-  }
-  send(sendData);
-}
 
-function loginAndStartUserServer({username, password, sid, ip}, callback){
 
-  const term = login({
+function loginAndStartUserProcess({username, password, sid, ip, sessionData, userData}, callback){
+
+  const pty = login({
     username,
     password,
     ip,
     end(err) {
-
       if(err){
         return callback(err);
       }
-      let usersid, userHash, userMap;
+      let usersid;
       if(!sid){
-        const sidObj = genSidAndHash();
-        usersid = sidObj.sid;
-        userHash = sidObj.hash;
+        usersid = genSid();
       } else {
-        const session = getSession(sid);
         usersid = sid;
-        userHash = session.hash;
-        userMap = session.userMap;
       }
-      startUserServer(term, userHash, username, function(err) {
+
+      startUserProcess(pty, usersid, username, function(err) {
         if(err) {
           return callback(err);
         }
         if(sid){
-          setNewUser(usersid, userMap, username, term);
+          addUser(usersid, username, userData, pty);
         } else {
-          _setNewSession(usersid, userHash, username, term);
+          addSession(usersid, sessionData, username, userData, pty);
         }
         
         callback(null, {
-          // output, 
-          sid: usersid,
-          sidHash: userHash
-        })
+          sid: usersid
+        });
       });
 
     }
   });
 }
 
-// function _handleMsgLogout({sid, username}, send){
-//   delSession(sid, username);
-//   send({
-//     status: 'success'
-//   });
-// }
-// process.on('exit', function(){
-//   if(serverProcess){
-//     serverProcess.kill();
-//   }
-// });
+
+function _handleUserConnected(onceToken, send){
+
+  triggerOnceToken(onceToken, function(err, data){
+    if(err){
+      send({
+        status: 'error',
+        message: err.message
+      })
+      return;
+    }
+    send({
+      status: 'success',
+      data
+    });
+  })
+  
+}
+
+function _handleAll(data, send){
+  send({
+    status: 'success',
+    data: all()
+  })
+}
 
 module.exports = {
   login: _handleMsgLogin,
-  getSession: _handleMsgGetSession,
+  userConnected: _handleUserConnected,
+  all: _handleAll,
   serverListened: function(){
     global.__is_server_listened = true;
   }
