@@ -1,6 +1,6 @@
 {
   "name": "@linux-remote/server",
-  "version": "4.2.1",
+  "version": "4.3.0",
   "author": {
     "name": "Du Wei",
     "email": "hezedu@hotmail.com"
@@ -12,7 +12,8 @@
   },
   "scripts": {
     "vminstall": "npm install --no-bin-links --production",
-    "publish": "node ../linux-remote/up-version-map.js"
+    "publish": "node ../linux-remote/up-version-map.js",
+    "p": "npm publish --access public"
   },
   "files": [
     "src"
