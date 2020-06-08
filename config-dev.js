@@ -1,7 +1,8 @@
 module.exports = {
-
+  log: '/tmp/linux-remote.log',
+  errLog: '/tmp/linux-remote-err.log',
   /* Website listen port. default: 3001 */
-  port: 3000, 
+  port: 3000,
   
   host: '192.168.56.101', // 
   // selfsigned ?

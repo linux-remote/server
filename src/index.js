@@ -19,7 +19,7 @@ if(global.IS_PRO){
 } else {
   global.CONF = {
     serverMainPath: path.join(__dirname, '../../server_main/src/index.js'),
-    serverUserPath: path.join(__dirname, '../../server_user/dev.js'),
+    serverUserPath: path.join(__dirname, '../../server_user/src/index.js'),
     loginBinPath: path.join(userInfo.homedir, 'bin/lr-login')
   }
 }
@@ -40,7 +40,6 @@ function spwanServer(){
     if(isRestart){
       return;
     }
-    console.log('mainProcess disconnect');
     // Fixed: https://github.com/linux-remote/linux-remote/issues/226
     if(!global.__is_server_listened){
       process.exit(1);
@@ -50,13 +49,14 @@ function spwanServer(){
   });
 }
 
+console.log('server runing pid ' + process.pid);
 spwanServer();
 
 process.on('SIGHUP', function(){
   isRestart = true;
+  console.log('server process on SIGHUP server_main reloading...');
   mainProcess.kill();
 });
-
 // Dsetory var
 rrOpts = null;
 userInfo = null;
