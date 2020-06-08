@@ -6,7 +6,7 @@ let userInfo = os.userInfo();
 let rrOpts = {
   paths: [path.join(userInfo.homedir, 'node_modules')]
 };
-
+let loginBinPath = path.join(userInfo.homedir, 'bin/lr-login');
 // --------------------------- global start ---------------------------
 global.IS_PRO = process.env.NODE_ENV === 'production';
 
@@ -14,14 +14,17 @@ if(global.IS_PRO){
   global.CONF = {
     serverMainPath: require.resolve('@linux-remote/server_main', rrOpts),
     serverUserPath: require.resolve('@linux-remote/server_user', rrOpts),
-    loginBinPath: path.join(userInfo.homedir, './bin/lr-login')
+    loginBinPath
   }
 } else {
+  // may start by manage dev.
+  let _userPath = process.env.NODE_ENV === 'development' ? 'dev.js' : 'src/index.js';
   global.CONF = {
     serverMainPath: path.join(__dirname, '../../server_main/src/index.js'),
-    serverUserPath: path.join(__dirname, '../../server_user/src/index.js'),
-    loginBinPath: path.join(userInfo.homedir, 'bin/lr-login')
+    serverUserPath: path.join(__dirname, '../../server_user/' + _userPath),
+    loginBinPath
   }
+  _userPath = null;
 }
 
 global.__is_server_listened = false;
@@ -60,3 +63,4 @@ process.on('SIGHUP', function(){
 // Dsetory var
 rrOpts = null;
 userInfo = null;
+loginBinPath = null;

@@ -69,6 +69,9 @@ function _handleServerProcessCrash(){
 
 function loop(){
   serverProcess = spawn(process.argv[0], [path.join(__dirname, './src/index.js')], {
+    env: {
+      NODE_ENV: 'development'
+    },
     stdio: 'inherit'
   });
 
