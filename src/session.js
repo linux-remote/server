@@ -81,7 +81,7 @@ function _getSession(sid){
   return sidMap.get(sid);
 }
 
-function _getUser(sid, username){
+function getUser(sid, username){
   const session = _getSession(sid);
   if(session){
     return session.userMap.get(username);
@@ -89,7 +89,7 @@ function _getUser(sid, username){
 }
 
 function setUserData(sid, username, data){
-  const user = _getUser(sid, username);
+  const user = getUser(sid, username);
   if(user){
     _setUserData(user, data);
   }
@@ -117,7 +117,7 @@ function removeSessionData(sid, key){
 }
 
 function removeUserData(sid, username, key){
-  const user = _getUser(sid, username);
+  const user = getUser(sid, username);
   if(user){
     if(key === 'pty'){
       throw new Error('canot modify user data key with "pty"');
@@ -188,7 +188,7 @@ function setOnceTokenAndWaitingUserConnect(sid, username, onceToken, callback){
   let timer = setTimeout(() => {
     onceTokenMap.delete(onceToken);
     callback(new Error('onceToken timeout.'));
-  }, 5000);
+  }, 5000)
 
   onceTokenMap.set(onceToken, function onconnected(){
     clearTimeout(timer);
@@ -219,7 +219,7 @@ module.exports = {
   setUserData,
   removeSessionData,
   removeUserData,
-
+  getUser,
   setOnceTokenAndWaitingUserConnect,
   triggerOnceToken
 }

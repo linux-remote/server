@@ -3,7 +3,7 @@ const login = require('./login.js');
 const startUserProcess = require('./start-user.js');
 const  session = require('./session.js');
 
-const { genSid,  addSession, addUser, triggerOnceToken, all } = session;
+const { genSid,  addSession, addUser, getUser, triggerOnceToken, all } = session;
 
 function _handleMsgLogin(data, send){
   loginAndStartUserProcess(data, function(err, result){
@@ -86,11 +86,33 @@ function _handleAll(data, send){
     data: all()
   })
 }
+function _hanldeRestartUserProcess({sid, username}, send){
+  const user = getUser(sid, username);
+  if(user){
+    startUserProcess(user.pty, sid, username, function(err) {
+      if(err) {
+        return send({
+          status: 'error',
+          message: err.message
+        });
+      }
+      return send({
+        status: 'success'
+      });
+      
+    });
+  }
 
+  send({
+    status: 'error',
+    message: 'not user'
+  })
+}
 module.exports = {
   login: _handleMsgLogin,
   userConnected: _handleUserConnected,
   all: _handleAll,
+  restartUserProcess: _hanldeRestartUserProcess,
   serverListened: function(){
     global.__is_server_listened = true;
   }
