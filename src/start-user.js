@@ -1,21 +1,34 @@
-const {setOnceTokenAndWaitingUserConnect, genSid} = require('./session.js');
-
-function startUserProcess(pty, sid, username, callback) {
-  const onceToken = genSid();
+// const waitUspTimeout = 5000;
+function startUser(pty) {
   const NODE_ENV = process.env.NODE_ENV || 'development';
-  const cmd = `(NODE_ENV=${NODE_ENV} LR_ONCE_TOKEN=${onceToken} ${process.argv[0]} ${global.CONF.serverUserPath})`;
-  // The pty not has stderr.
+  // hidden bash history
+  let cmd = ` NODE_ENV=${NODE_ENV} ${process.argv[0]} ${global.CONF.serverUserPath}`;
   pty.write(cmd + '\n');
+  
+  
+  // if(user._onConnect){
+  //   callback({
+  //     name: 'Error',
+  //     message: 'repeat user onConnect.'
+  //   })
+  //   return;
+  // }
 
-  setOnceTokenAndWaitingUserConnect(sid, username, onceToken, function(err, result){
-    if(err){
-      pty.kill();
-      return callback(err);
-    }
-    callback(null, result);
-  });
+  // const timer = setTimeout(function(){
+  //   pty._socket.destroy();
+  //   delete(user._onConnect);
+  //   callback({
+  //     name: 'Error',
+  //     message: 'wait usp timerout.'
+  //   })
+  // }, waitUspTimeout);
 
+  // user._onConnect = function(){
+  //   clearTimeout(timer);
+  //   delete(user._onConnect);
+  //   callback(null, sid);
+  // };
 }
 
 
-module.exports = startUserProcess;
+module.exports = startUser;

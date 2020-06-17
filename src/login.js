@@ -1,109 +1,160 @@
+// The expect like UI.
 
-const pty = require('node-pty');
+const nodePty = require('node-pty');
 const { escapeInjection } = require('./util');
+const { genSid, addUser, removeUser } = require('./session.js');
 const os = require('os');
-function killLoginTerm(term){
+const waitEnterPswTimeout = 5000;
+const ptyIdleTimeout = 10000;
+
+function killLoginTerm(pty){
   // Fixed: Login timed out after 60 seconds.
   // use socket.destroy replace width write \u0003 2020/06/05
-  // term.write('\u0003');
-  term._socket.destroy();
+  // pty.write('\u0003');
+  pty._socket.destroy();
 }
+
 function login(opts) {
   const username = escapeInjection(opts.username);
   // username can't see in `top -c -b`
-  const term = pty.spawn(global.CONF.loginBinPath, ['-h', opts.ip, username], {
-    rows: 1,
-    cols: 1
-  });
+  const pty = nodePty.spawn(global.CONF.loginBinPath, ['-h', opts.ip, username]);
 
   const callback = opts.end;
+  let currProcessName = pty.process;
+  let sid = opts.sid;
+  let user;
+  let timer = setTimeout(function(){
+    timer = null;
+    _done({
+      name: 'Error',
+      message: 'Wait enter password timeout'
+    });
+  }, waitEnterPswTimeout);
 
-  // console.info('\nterm.process', term.process);
-  // console.info('term.pid', term.pid, '\n');
-
-  let isEnd = false;
-  let timer;
-  function end(err, output) {
+  function _done(err){
     if(timer){
       clearTimeout(timer);
+      timer = null;
     }
-    if(isEnd) { // term on Error: may have read EIO bug.
-      return;
-    }
-    isEnd = true;
 
-    if(err) {
-      killLoginTerm(term);
+    pty.removeListener('data', handleBeforeLoginData);
+    pty.removeListener('error', _done);
+
+    if(err){
+      killLoginTerm(pty);
       callback(err);
     } else {
-      callback(null, output);
+      
+      setIdleTimeout();
+
+      if(!sid){
+        sid = genSid();
+      }
+      user = addUser(sid, opts.sessionData, username, opts.userData, pty);
+
+      pty.addListener('data', handleBeforeCreateUsp);
+      pty.addListener('exit', handleExit);
+      callback(null, sid);
     }
   }
 
-  const BEFORE_PROCESS = term.process;
-  // let isNotHaveOutput = true;
-  let output = '';
-  // const debunce = new DebounceTime(function() {
-  //   if(isNotHaveOutput) {
-  //     isNotHaveOutput = !output.trim();
-  //   }
-  //   if(isNotHaveOutput){ // waiting
-  //     return;
-  //   }
-  //   if(BEFORE_PROCESS !== term.process) {
-  //     end(null, output);
-  //   } else {
-  //     end({
-  //       name: 'loginError',
-  //       message: getFirstLine(output)
-  //     });
-  //   }
-  //   term.removeListener('data', handleData);
-  // }, 200);
-  
-  function handleData(data) {
-    output = output + data;
-    if(BEFORE_PROCESS !== term.process){
-      // console.log('term process2', term.process);
-      end(null);
-      term.removeListener('data', handleData);
+  pty.once('data', function() {
+    const password = escapeInjection(opts.password);
+    pty.write(password + '\n');
+    pty.addListener('data', handleBeforeLoginData);
+  });
+
+  function handleBeforeLoginData(data) {
+    if(currProcessName !== pty.process){
+      // login success.
+      currProcessName = pty.process;
+      _done();
+
     } else {
       if(data.indexOf('Login incorrect') !== -1) {
-        end({
-          name: 'loginError',
+        _done({
+          name: 'Error',
           message: 'Login incorrect'
         })
       } else if(data.indexOf(os.hostname() + ' login:') !== -1){
-        end({
-          name: 'loginError',
-          message: 'Login incorrect'
-        })
+        _done({
+          name: 'Error',
+          message: 'Login incorrect.'
+        });
       }
     }
-    // debunce.trigger();
   }
-  if(!global.IS_PRO){
-    term.on('data', function(data){
-      process.stdout.write(data);
-    })
+
+  function setIdleTimeout(){
+    if(timer){
+      return;
+    }
+    timer = setTimeout(function(){
+      console.error('pty kill by idle.');
+      killLoginTerm(pty);
+    }, ptyIdleTimeout);
   }
-  term.once('data', function() {
-    const password = escapeInjection(opts.password);
-    term.write(password + '\n');
-    term.addListener('data', handleData);
-    timer = setTimeout(() => {
+
+  function removeIdleTimeout(){
+    if(timer){
+      clearTimeout(timer);
       timer = null;
-      end({
-        name: 'loginError',
-        message: 'Login timeout'
+    }
+  }
+
+  function handleBeforeCreateUsp(data){
+    if(pty.process !== currProcessName){
+      if(data === 'PassSid:'){
+        pty.write(sid + '\n');
+        removeIdleTimeout();
+        pty.removeListener('data', handleBeforeCreateUsp);
+        pty.addListener('data', handleUspData);
+      }
+
+    }
+  }
+
+  function handleUspData(){
+    if(pty.process === currProcessName){
+      if(user._is_normal_exit){
+        pty.removeListener('data', handleUspData);
+        console.log('pty.write exit');
+        pty.write('exit\n');
+        return;
+      }
+      setIdleTimeout();
+      pty.removeListener('data', handleUspData);
+      pty.addListener('data', handleBeforeCreateUsp);
+    }
+  }
+
+  function handleExit(){
+    removeIdleTimeout();
+    if(user._is_remove){
+      return;
+    }
+    user._is_remove = true;
+    removeUser(sid, username);
+  }
+  pty.on('error', _done);
+
+  if(!global.IS_PRO){
+    const fs = require('fs');
+    fs.open('/tmp/pty.log', 'w', function(err, fd){
+      if(err){
+        console.error(err);
+        return;
+      }
+      pty.on('data', function(data){
+        fs.writeSync(fd, data)
       })
-    }, 5000);
-  });
-  term.on('error', end);
-  // term.on('exit', function(){
-  //   console.info('\n----------- term exit -----------\n');
-  // });
-  return term;
+      pty.on('exit', function(){
+        fs.closeSync(fd);
+      })
+    });
+  }
+
+  return pty;
 }
 
 

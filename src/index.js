@@ -1,8 +1,14 @@
 "use strict";
 const os = require('os');
+let userInfo = os.userInfo();
+
+if(userInfo.username !== 'linux-remote'){
+  console.error(`linux-remote must start by the 'linux-remote' user.`);
+  process.exit();
+}
+
 const path = require('path');
 
-let userInfo = os.userInfo();
 let rrOpts = {
   paths: [path.join(userInfo.homedir, 'node_modules')]
 };
@@ -17,14 +23,11 @@ if(global.IS_PRO){
     loginBinPath
   }
 } else {
-  // may start by manage dev.
-  let _userPath = process.env.NODE_ENV === 'development' ? 'dev.js' : 'src/index.js';
   global.CONF = {
     serverMainPath: path.join(__dirname, '../../server_main/src/index.js'),
-    serverUserPath: path.join(__dirname, '../../server_user/' + _userPath),
+    serverUserPath: path.join(__dirname, '../../server_user/src/index.js'),
     loginBinPath
   }
-  _userPath = null;
 }
 
 global.__is_server_listened = false;
@@ -35,10 +38,15 @@ const startMainProcess = require('./start-main.js');
 
 let mainProcess;
 let isRestart = false;
+global.__sendMainProcess = function(data){
+  if(mainProcess.connected){
+    mainProcess.send(data);
+  }
+}
 function spwanServer(){
   mainProcess = startMainProcess();
   handlePIC(mainProcess);
-  global.__main_process__ = mainProcess;
+
   mainProcess.on('disconnect', () => {
     if(isRestart){
       return;
@@ -52,7 +60,6 @@ function spwanServer(){
   });
 }
 
-console.log('server runing pid ' + process.pid);
 spwanServer();
 
 process.on('SIGHUP', function(){
@@ -60,6 +67,7 @@ process.on('SIGHUP', function(){
   console.log('server process on SIGHUP server_main reloading...');
   mainProcess.kill();
 });
+
 // Dsetory var
 rrOpts = null;
 userInfo = null;

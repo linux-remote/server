@@ -1,118 +1,104 @@
 
 const login = require('./login.js');
-const startUserProcess = require('./start-user.js');
-const  session = require('./session.js');
+const startUser = require('./start-user.js');
 
-const { genSid,  addSession, addUser, getUser, triggerOnceToken, all } = session;
+const {  getUser, all } = require('./session.js');
 
-function _handleMsgLogin(data, send){
-  loginAndStartUserProcess(data, function(err, result){
-    if(err){
-      send({
-        status: 'error',
-        message: err.message
-      });
-      return;
-    }
-
-    send({
-      status: 'success',
-      data: result
-    });
-  });
-
+function _wrapError(err){
+  return {
+    status: 'error',
+    message: err.message
+  }
+}
+function _wrapSuccess(data){
+  return {
+    status: 'success',
+    data
+  }
 }
 
-
-
-function loginAndStartUserProcess({username, password, sid, ip, sessionData, userData}, callback){
-
-  const pty = login({
+function _handleLogin({username, password, ip, sid, sessionData, userData}, send){
+  login({
     username,
     password,
     ip,
-    end(err) {
+    sid,
+    sessionData,
+    userData,
+    end(err, sid2) {
       if(err){
-        return callback(err);
+        send(_wrapError(err));
+        return;
       }
-      let usersid;
-      if(!sid){
-        usersid = genSid();
-      } else {
-        usersid = sid;
-      }
-
-      startUserProcess(pty, usersid, username, function(err) {
-        if(err) {
-          return callback(err);
-        }
-        if(sid){
-          addUser(usersid, username, userData, pty);
-        } else {
-          addSession(usersid, sessionData, username, userData, pty);
-        }
-        
-        callback(null, {
-          sid: usersid
-        });
-      });
-
-    }
-  });
+      send(_wrapSuccess(sid2));
+    }})
 }
 
 
-function _handleUserConnected(onceToken, send){
+// function loginAndStartUserProcess({username, password, sid, ip, sessionData, userData}, callback){
 
-  triggerOnceToken(onceToken, function(err, data){
-    if(err){
-      send({
-        status: 'error',
-        message: err.message
-      })
-      return;
-    }
-    send({
-      status: 'success',
-      data
-    });
-  })
-  
-}
+//   const pty = login({
+//     username,
+//     password,
+//     ip,
+//     end(err) {
+//       if(err){
+//         return callback(err);
+//       }
+//       let usersid;
+//       if(!sid){
+//         usersid = genSid();
+//       } else {
+//         usersid = sid;
+//       }
+
+
+
+//     }
+//   });
+// }
+
+
 
 function _handleAll(data, send){
-  send({
-    status: 'success',
-    data: all()
-  })
+  send(_wrapSuccess(all()));
 }
-function _hanldeRestartUserProcess({sid, username}, send){
+
+function _hanldeStartUser({sid, username}){
   const user = getUser(sid, username);
   if(user){
-    startUserProcess(user.pty, sid, username, function(err) {
-      if(err) {
-        return send({
-          status: 'error',
-          message: err.message
-        });
-      }
-      return send({
-        status: 'success'
-      });
-      
-    });
+    startUser(user._pty);
+    
   }
 
-  send({
-    status: 'error',
-    message: 'not user'
-  })
 }
+
+function _handleNormalExit({sid, username}, send){
+  console.log('_handleNormalExit')
+  const user = getUser(sid, username);
+  if(user){
+    user._is_normal_exit = true;
+    send(_wrapSuccess('ok'));
+  } else {
+    send(_wrapSuccess('no user'));
+  }
+}
+
+// function _handlelogout({sid, username}, send){
+//   const user = getUser(sid, username);
+//   if(user){
+//     user._is_normal_exit = true;
+//     send(_wrapSuccess('ok'));
+//   } else {
+//     send(_wrapSuccess('no user'));
+//   }
+// }
+
 module.exports = {
-  login: _handleMsgLogin,
-  userConnected: _handleUserConnected,
+  login: _handleLogin,
+  normalExit: _handleNormalExit,
   all: _handleAll,
-  restartUserProcess: _hanldeRestartUserProcess,
+  startUser: _hanldeStartUser,
   serverListened: function(){
     global.__is_server_listened = true;
   }

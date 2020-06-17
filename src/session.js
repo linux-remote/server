@@ -8,15 +8,13 @@ sidMap:
 
 userMap:
 	key: username
-	value: {pty, _autoDelTimer, otherData}
+	value: {_pty,  ...otherData}
  */
 
 const sortTimeStartPoint = 1579660004551; // 2020/01/22
 const sortTime = Date.now() - sortTimeStartPoint;
 // const SID_MIN_LENGTH = 34;
 const sidMap = new Map();
-const onceTokenMap = new Map();
-
 let index = 1;
 
 function genSid(){
@@ -40,23 +38,23 @@ function genSid(){
   return sid;
 }
 
-function addSession(sid, sessionData, username, userData, pty){
+function _addSession(sid, sessionData){
   const session = Object.create(null);
   session.userMap = new Map();
   sidMap.set(sid, session);
   _setSessionData(session, sessionData);
-  addUser(sid, username, userData, pty);
-  
   return session;
 }
 
-function addUser(sid, username, userData, pty){
-  const session = _getSession(sid);
+function addUser(sid, sessData, username, userData, pty){
+  let session = _getSession(sid);
+  if(!session){
+    session = _addSession(sid, sessData);
+  }
   const user = Object.create(null);
-  user.pty = pty;
+  user._pty = pty;
   _setUserData(user, userData);
   session.userMap.set(username, user);
-  _ptyExitTriggerClear(pty, sid, username);
   return user;
 }
 
@@ -99,10 +97,12 @@ function _setUserData(user, data){
   if(!data){
     return;
   }
-  if(data.pty){
-    throw new Error('canot modify user data key with "pty"');
-  }
-  Object.assign(user, data);
+  Object.keys(data).forEach(k => {
+    if(k[0] === '_'){
+      throw new Error('canot modify user data key start with "_"');
+    }
+    user[k] = data[k];
+  })
 }
 
 function removeSessionData(sid, key){
@@ -119,8 +119,8 @@ function removeSessionData(sid, key){
 function removeUserData(sid, username, key){
   const user = getUser(sid, username);
   if(user){
-    if(key === 'pty'){
-      throw new Error('canot modify user data key with "pty"');
+    if(key[0] === '_'){
+      throw new Error('canot modify user data key start with "_"');
     }
     delete(user[key]);
   }
@@ -143,7 +143,7 @@ function all(){
     userMap.forEach(function(user, username){
       const _user = Object.create(null);
       for(i in user){
-        if(i !== 'pty'){
+        if(i[0] !== '_'){
           _user[i] = user[i];
         }
       }
@@ -156,70 +156,36 @@ function all(){
 
 
 
-function _removeUser(sid, username){
+function removeUser(sid, username){
   const session = _getSession(sid);
   if(session){
     const userMap = session.userMap;
     const user = userMap.get(username);
     if(user){
-      if(!user.pty._is_exit){
-        user.pty.kill();
+      if(!user._is_remove){
+        user._is_remove = true;
+        user._pty.kill();
       }
       userMap.delete(username);
       if(userMap.size === 0){
         sidMap.delete(session.id);
       }
-      console.log('remove server', Date.now())
-      global.__main_process__.send({event: 'removeUser', data: {sid, username}})
+      global.__sendMainProcess({event: 'removeUser', data: {sid, username}});
     }
   }
 }
 
-function _ptyExitTriggerClear(pty, sid, username){
-  pty.once('exit', function(){
-    pty._is_exit = true;
-    _removeUser(sid, username);
-  });
-}
 
-
-function setOnceTokenAndWaitingUserConnect(sid, username, onceToken, callback){
-
-  let timer = setTimeout(() => {
-    onceTokenMap.delete(onceToken);
-    callback(new Error('onceToken timeout.'));
-  }, 5000)
-
-  onceTokenMap.set(onceToken, function onconnected(){
-    clearTimeout(timer);
-    callback(null);
-    return {
-      sid,
-      username
-    };
-  });
-}
-
-function triggerOnceToken(onceToken, cb){
-  let onconnected = onceTokenMap.get(onceToken);
-  if(!onconnected){
-    return cb(new Error('not has once token'));
-  }
-  onceTokenMap.delete(onceToken);
-  const data = onconnected();
-  cb(null, data);
-}
 
 module.exports = {
   genSid,
-  addSession,
+  _addSession,
   addUser,
+  removeUser,
   all,
   setSessionData,
   setUserData,
   removeSessionData,
   removeUserData,
-  getUser,
-  setOnceTokenAndWaitingUserConnect,
-  triggerOnceToken
+  getUser
 }

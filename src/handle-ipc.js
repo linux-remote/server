@@ -4,16 +4,16 @@ function handleIPC(serverProcess){
 
   serverProcess.on('message', function(msgObj){
 
-    function _send(sendData, callback){
-      if(sendData){
-        sendData.id = msgObj.id;
-        serverProcess.send(sendData, callback);
-      }
-    }
-    
     let handler = methods[msgObj.type];
-    if(handler){
-      handler(msgObj.data, _send);
+    if(handler.length === 2){
+      handler(msgObj.data, function _send(sendData, callback){
+        if(sendData){
+          sendData.id = msgObj.id;
+          serverProcess.send(sendData, callback);
+        }
+      });
+    } else {
+      handler(msgObj.data);
     }
 
   });

@@ -2,7 +2,10 @@
 const http = require('http');
 const path = require('path');
 const {execSync, exec} = require('child_process');
-
+if(process.geteuid() !== 0){
+  console.log('[live-reload]: need root.');
+  return;
+}
 const cliDir = path.join(__dirname, '../cli');
 
 function _execSyncAsLR(cmd){
@@ -15,55 +18,46 @@ function _cmdWrap(cmd){
 
 
 const server = http.createServer(function(req, res){
-  console.log('live reload on request')
+  
   if(req.method === 'POST'){
     if(req.url === '/server'){
-      _execSyncAsLR('restart');
+      _execSyncAsLR('restart -y');
       res.end('ok');
     } else if(req.url === '/server_main'){
       _execSyncAsLR('reload');
       res.end('ok');
-    } else if(req.url === '/sever_user'){
-      _getUserPids(function(err, pids){
-        if(err){
-          console.error(err);
-          res.end(err.name + ': ' + err.message);
-          return;
-        }
-        if(pids.length){
-          pids.forEach(pid => {
-            process.kill(pid);
-          })
-          res.end('ok');
-        } else {
-          res.end('not user process runing.');
-        }
-
-      })
+    } else if(req.url === '/server_user'){
       
+      reloadUser(function(msg){
+        res.end(msg);
+      })
+      return;
     }
   } else if(req.method === 'GET'){
     if(req.url === '/'){
-      res.end('This is live reload server.');
+      res.end('This is inner reload server.');
     }
+  } else {
+    res.end('404');
   }
 
-  res.end('404');
+  
 })
 
 const PORT = 10001;
 server.listen(PORT);
 server.on('listening', function(){
-  console.log('live-reload server listening on ' + PORT);
+  console.log('[live-reload]: listening on ' + PORT);
   _execSyncAsLR('start');
 });
 
 process.on('exit', function(){
-  _execSyncAsLR('stop');
+  console.log('[inner-reload]: process exit.');
+  _execSyncAsLR('stop -y');
 });
 ['SIGTERM', 'SIGINT', 'SIGHUP'].forEach(v => {
   process.on(v, function(){
-    console.log("process " + v);
+    console.log("[live-reload]: process on " + v);
     process.exit();
   })
 
@@ -83,7 +77,7 @@ function _getGrepInfo(cmd, endMark, callback){
 }
 
 function _getPidsByCMDMark(cmdMark, callback){
-  _getGrepInfo('ps U linux-remote', cmdMark, function(err, stdout){
+  _getGrepInfo('ps axo pid,cmd', cmdMark, function(err, stdout){
     if(err){
       return callback(err);
     }
@@ -114,4 +108,27 @@ function _getUserPids(callback){
     }
     callback(null, arr);
   });
+}
+
+function reloadUser(callback){
+  _getUserPids(function(err, pids){
+    console.log('[live-reload]: user pids', pids);
+    if(err){
+      console.error(err);
+      callback(err.name + ': ' + err.message);
+      return;
+    }
+    if(pids.length){
+      pids.forEach(pid => {
+        process.kill(pid);
+      })
+      console.log('[live-reload]: user process killed');
+      callback('ok');
+    } else {
+      let msg = 'not user process runing.';
+      console.log('[live-reload]: ' + msg);
+      callback(msg);
+    }
+
+  })
 }

@@ -19,7 +19,7 @@ function _watch(){
       _request(key);
     }, dealy);
 
-    fs.watch(obPath, function(){
+    fs.watch(obPath, {recursive: true}, function(){
       args = arguments;
       dt.trigger();
     });
