@@ -68,35 +68,37 @@ function _hanldeStartUser({sid, username}){
   const user = getUser(sid, username);
   if(user){
     startUser(user._pty);
-    
   }
-
 }
 
-function _handleNormalExit({sid, username}, send){
-  console.log('_handleNormalExit')
+
+
+function _handlelogout({sid, username}, send){
   const user = getUser(sid, username);
   if(user){
-    user._is_normal_exit = true;
-    send(_wrapSuccess('ok'));
+    user._normal_exit();
+
+    let timer = setTimeout(function(){
+      timer = null;
+      console.error('user pty normal exit fail. used close it by _socket.destory.');
+      user._pty._socket.destory();
+    }, 5000);
+
+    user._pty.once('exit', function(){
+      if(timer){
+        clearTimeout(timer);
+      }
+      send(_wrapSuccess('ok'));
+    });
+
   } else {
     send(_wrapSuccess('no user'));
   }
 }
 
-// function _handlelogout({sid, username}, send){
-//   const user = getUser(sid, username);
-//   if(user){
-//     user._is_normal_exit = true;
-//     send(_wrapSuccess('ok'));
-//   } else {
-//     send(_wrapSuccess('no user'));
-//   }
-// }
-
 module.exports = {
   login: _handleLogin,
-  normalExit: _handleNormalExit,
+  logout: _handlelogout,
   all: _handleAll,
   startUser: _hanldeStartUser,
   serverListened: function(){

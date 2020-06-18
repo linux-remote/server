@@ -52,6 +52,16 @@ function login(opts) {
       }
       user = addUser(sid, opts.sessionData, username, opts.userData, pty);
 
+      user._normal_exit = function(){
+        if(currProcessName === pty.process){
+          removeIdleTimeout();
+          pty.write('exit\n');
+        } else {
+          user._is_normal_exit = true;
+          pty.write('\u0003'); // Ctrl + C
+        }
+      }
+
       pty.addListener('data', handleBeforeCreateUsp);
       pty.addListener('exit', handleExit);
       callback(null, sid);
@@ -118,7 +128,7 @@ function login(opts) {
     if(pty.process === currProcessName){
       if(user._is_normal_exit){
         pty.removeListener('data', handleUspData);
-        console.log('pty.write exit');
+        removeIdleTimeout();
         pty.write('exit\n');
         return;
       }
