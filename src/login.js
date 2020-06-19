@@ -128,7 +128,6 @@ function login(opts) {
     if(pty.process === currProcessName){
       if(user._is_normal_exit){
         pty.removeListener('data', handleUspData);
-        removeIdleTimeout();
         pty.write('exit\n');
         return;
       }

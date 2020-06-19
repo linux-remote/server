@@ -73,23 +73,33 @@ function _hanldeStartUser({sid, username}){
 
 
 
-function _handlelogout({sid, username}, send){
+function _handlelogout({sid, username, isUnNormal}, send){
+
   const user = getUser(sid, username);
   if(user){
-    user._normal_exit();
-
-    let timer = setTimeout(function(){
-      timer = null;
-      console.error('user pty normal exit fail. used close it by _socket.destory.');
-      user._pty._socket.destory();
-    }, 5000);
-
+    let timer;
     user._pty.once('exit', function(){
       if(timer){
         clearTimeout(timer);
+        timer = null;
       }
       send(_wrapSuccess('ok'));
     });
+    
+    if(isUnNormal){
+      user._pty._socket.destroy();
+      return;
+    }
+    
+    user._normal_exit();
+
+    timer = setTimeout(function(){
+      timer = null;
+      console.error('user pty normal exit fail. used close it by _socket.destroy.');
+      user._pty._socket.destroy();
+    }, 5000);
+
+
 
   } else {
     send(_wrapSuccess('no user'));

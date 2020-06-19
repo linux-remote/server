@@ -42,7 +42,7 @@ function _addSession(sid, sessionData){
   const session = Object.create(null);
   session.userMap = new Map();
   sidMap.set(sid, session);
-  _setSessionData(session, sessionData);
+  _setData(session, sessionData);
   return session;
 }
 
@@ -53,7 +53,7 @@ function addUser(sid, sessData, username, userData, pty){
   }
   const user = Object.create(null);
   user._pty = pty;
-  _setUserData(user, userData);
+  _setData(user, userData);
   session.userMap.set(username, user);
   return user;
 }
@@ -61,19 +61,10 @@ function addUser(sid, sessData, username, userData, pty){
 function setSessionData(sid, data){
   const session = sidMap.get(sid);
   if(session){
-    _setSessionData(session, data);
+    _setData(session, data);
   }
 }
 
-function _setSessionData(session, data){
-  if(!data){
-    return;
-  }
-  if(data.userMap){
-    throw new Error('canot modify key with "userMap"');
-  }
-  Object.assign(session, data);
-}
 
 function _getSession(sid){
   return sidMap.get(sid);
@@ -89,29 +80,32 @@ function getUser(sid, username){
 function setUserData(sid, username, data){
   const user = getUser(sid, username);
   if(user){
-    _setUserData(user, data);
+    _setData(user, data);
   }
 }
 
-function _setUserData(user, data){
+function _setData(obj, data){
   if(!data){
     return;
   }
-  Object.keys(data).forEach(k => {
-    if(k[0] === '_'){
-      throw new Error('canot modify user data key start with "_"');
-    }
-    user[k] = data[k];
-  })
+  if(!obj.data){
+    obj.data = data;
+  } else {
+    Object.assign(obj.data, data);
+  }
+}
+
+function _removeData(obj, key){
+  if(!obj.data){
+    return;
+  }
+  delete(obj.data, key);
 }
 
 function removeSessionData(sid, key){
   const session = _getSession(sid);
   if(session){
-    if(key === 'userMap'){
-      throw new Error('canot modify session data key with "userMap"');
-    }
-    delete(session[key]);
+    _removeData(session, key);
   }
 
 }
@@ -119,35 +113,29 @@ function removeSessionData(sid, key){
 function removeUserData(sid, username, key){
   const user = getUser(sid, username);
   if(user){
-    if(key[0] === '_'){
-      throw new Error('canot modify user data key start with "_"');
-    }
-    delete(user[key]);
+    _removeData(user, key);
   }
 
 }
 
 function all(){
   const result = Object.create(null);
-  let k;
   sidMap.forEach(function(session, sid){
     const _session = Object.create(null);
-    for(k in session){
-      if(k !== 'userMap'){
-        _session[k] = session[k];
-      }
+    if(session.data){
+      _session.data = Object.create(null);
+      Object.assign(_session.data, session.data);
     }
+
     const _userMap = _session.userMap = Object.create(null);
     const userMap = session.userMap;
-    let i;
     userMap.forEach(function(user, username){
-      const _user = Object.create(null);
-      for(i in user){
-        if(i[0] !== '_'){
-          _user[i] = user[i];
-        }
+      const _userData = Object.create(null);
+      if(user.data){
+        Object.assign(_userData, user.data);
       }
-      _userMap[username] = _user;
+
+      _userMap[username] = _userData;
     });
     result[sid] = _session;
   });
