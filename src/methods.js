@@ -95,7 +95,7 @@ function _handlelogout({sid, username, isUnNormal}, send){
 
     timer = setTimeout(function(){
       timer = null;
-      console.error('user pty normal exit fail. used close it by _socket.destroy.');
+      console.error('user pty normal exit fail. close it by _socket.destroy.');
       user._pty._socket.destroy();
     }, 5000);
 
