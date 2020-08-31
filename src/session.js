@@ -144,7 +144,7 @@ function all(){
 
 
 
-function removeUser(sid, username){
+function removeUser(sid, username, errMsg){
   const session = _getSession(sid);
   if(session){
     const userMap = session.userMap;
@@ -158,7 +158,7 @@ function removeUser(sid, username){
       if(userMap.size === 0){
         sidMap.delete(session.id);
       }
-      global.__sendMainProcess({event: 'removeUser', data: {sid, username}});
+      global.__sendMainProcess({event: 'removeUser', data: {sid, username, errMsg}});
     }
   }
 }

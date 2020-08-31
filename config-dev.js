@@ -8,7 +8,10 @@ module.exports = {
   // selfsigned ?
   // https://github.com/jfromaniello/selfsigned
 
-  secure : null, // http model, default: null.
+  // secure : {
+  //   keyPath: '/mnt/common/ssl/192.168.56.101/server.key',
+  //   certPath: '/mnt/common/ssl/192.168.56.101/server.crt'
+  // }, // http model, default: null.
   /*
   // Provide an Object to enter https model: 
   secure: {
@@ -28,19 +31,6 @@ module.exports = {
 
   
   trustProxy: false, // Boolean, If you used proxy, You need set it. Otherwise, you will not get the real IP when you login.
-  // More settings:  https://expressjs.com/en/guide/behind-proxies.html
 
-  // ----------------- hotload -----------------
-  // You change Just need linux-remote hotload.
-  // hotload: {
-
-  // }
-  cookie: {
-    secure: undefined,
-    sameSite: 'None',
-  },
-
-  // CORS: 'http://127.0.0.1:4000',
-  // CORS: undefined,
   client: 'http://127.0.0.1:4000'
 };

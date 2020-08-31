@@ -2,9 +2,14 @@
 const os = require('os');
 let userInfo = os.userInfo();
 
+if(process.platform !== 'linux'){
+  console.error('platform is not linux.');
+  return;
+}
+
 if(userInfo.username !== 'linux-remote'){
   console.error(`linux-remote must start by the 'linux-remote' user.`);
-  process.exit();
+  return;
 }
 
 const path = require('path');
