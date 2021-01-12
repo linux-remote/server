@@ -1,11 +1,6 @@
 # server 
 ## Development
-### Install
-In linux VM:
-`npm rm vminstall`
 
-Other:
-`npm install --only=dev`
 
 ## Install
 - Linux(vm): `npm install --no-bin-links --production`
