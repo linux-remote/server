@@ -1,3 +1,4 @@
+const path = require('path');
 module.exports = {
   log: '/tmp/linux-remote.log',
   errLog: '/tmp/linux-remote-err.log',
@@ -7,11 +8,14 @@ module.exports = {
   host: '192.168.56.101', // 
   // selfsigned ?
   // https://github.com/jfromaniello/selfsigned
-
-  // secure : {
-  //   keyPath: '/mnt/common/ssl/192.168.56.101/server.key',
-  //   certPath: '/mnt/common/ssl/192.168.56.101/server.crt'
-  // }, // http model, default: null.
+  cookie: {
+    secure: true,
+    sameSite: 'None'
+  },
+  secure : {
+    keyPath: path.join(__dirname, 'dev_ssl/192.168.56.101/server.key'),
+    certPath: path.join(__dirname, 'dev_ssl/192.168.56.101/server.crt')
+  }, // http model, default: null.
   /*
   // Provide an Object to enter https model: 
   secure: {

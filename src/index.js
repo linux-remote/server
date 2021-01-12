@@ -7,6 +7,11 @@ if(process.platform !== 'linux'){
   return;
 }
 
+if(Number(process.versions.node.split('.')[0]) < 12){
+  console.error('linux-remote required NodeJs version 12+');
+  return;
+}
+
 if(userInfo.username !== 'linux-remote'){
   console.error(`linux-remote must start by the 'linux-remote' user.`);
   return;
