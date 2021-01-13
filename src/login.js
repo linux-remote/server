@@ -1,13 +1,11 @@
 // The expect like UI.
 
 const nodePty = require('node-pty');
-const { escapeInjection } = require('./util.js');
+const { escapeInjection } = require('./util');
 const { genSid, addUser, removeUser } = require('./session.js');
 const os = require('os');
-
 const waitEnterPswTimeout = 5000;
 const ptyIdleTimeout = 10000;
-const uspErrFlag = 'UNCAUGH_EXCEPTION';
 
 function killLoginTerm(pty){
   // Fixed: Login timed out after 60 seconds.
@@ -17,19 +15,14 @@ function killLoginTerm(pty){
 }
 
 function login(opts) {
-  
   const username = escapeInjection(opts.username);
   // username can't see in `top -c -b`
-  const pty = nodePty.spawn(global.CONF.loginBinPath, ['-h', opts.ip, username], {
-    cols: 80,
-    rows: 24
-  });
+  const pty = nodePty.spawn(global.CONF.loginBinPath, ['-h', opts.ip, username]);
 
   const callback = opts.end;
   let currProcessName = pty.process;
   let sid = opts.sid;
   let user;
-  let loginOut = '';
   let timer = setTimeout(function(){
     timer = null;
     _done({
@@ -71,7 +64,7 @@ function login(opts) {
 
       pty.addListener('data', handleBeforeCreateUsp);
       pty.addListener('exit', handleExit);
-      callback(null, {sid, loginOut});
+      callback(null, sid);
     }
   }
 
@@ -81,24 +74,13 @@ function login(opts) {
     pty.addListener('data', handleBeforeLoginData);
   });
 
-  // function hanldeAfterLoginData(data){
-  //   global.__sendMainProcess({
-  //     event: 'ptyWrite',
-  //     data: {
-  //       sid,
-  //       username,
-  //       out: data
-  //     }
-  //   });
-  // }
   function handleBeforeLoginData(data) {
     if(currProcessName !== pty.process){
       // login success.
       currProcessName = pty.process;
       _done();
-      loginOut = '';
+
     } else {
-      loginOut = loginOut + data;
       if(data.indexOf('Login incorrect') !== -1) {
         _done({
           name: 'Error',
@@ -141,32 +123,17 @@ function login(opts) {
 
     }
   }
-  let uspLogs = [];
-  function handleUspData(data){
+
+  function handleUspData(){
     if(pty.process === currProcessName){
       if(user._is_normal_exit){
         pty.removeListener('data', handleUspData);
         pty.write('exit\n');
         return;
       }
-
-      
-      if(global.IS_PRO){
-        killLoginTerm(pty);
-      } else {
-        setIdleTimeout();
-        pty.removeListener('data', handleUspData);
-        pty.addListener('data', handleBeforeCreateUsp);
-        console.log('reStart User.');
-      }
-
-      
-
-    } else {
-      uspLogs.push(data);
-      if(uspLogs.length > 20){
-        uspLogs.shift();
-      }
+      setIdleTimeout();
+      pty.removeListener('data', handleUspData);
+      pty.addListener('data', handleBeforeCreateUsp);
     }
   }
 
@@ -176,7 +143,7 @@ function login(opts) {
       return;
     }
     user._is_remove = true;
-    removeUser(sid, username, getErrMsg(uspLogs));
+    removeUser(sid, username);
   }
   pty.on('error', _done);
 
@@ -188,7 +155,7 @@ function login(opts) {
         return;
       }
       pty.on('data', function(data){
-        fs.writeSync(fd, data);
+        fs.writeSync(fd, data)
       })
       pty.on('exit', function(){
         fs.closeSync(fd);
@@ -199,14 +166,5 @@ function login(opts) {
   return pty;
 }
 
-function getErrMsg(arr){
-  let str = arr.join('');
-  let i = str.indexOf(uspErrFlag);
-  if(i !== -1){
-    str = str.substr(i + uspErrFlag.length);
-    return str.trim();
-  }
-  return '';
-}
 
 module.exports = login;
