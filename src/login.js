@@ -6,7 +6,7 @@ const { genSid, addUser, removeUser } = require('./session.js');
 const os = require('os');
 const waitEnterPswTimeout = 5000;
 const ptyIdleTimeout = 10000;
-
+const TPT_READY_MARK = 'TERMINAL_PASS_THROUGH_READY:';
 function killLoginTerm(pty){
   // Fixed: Login timed out after 60 seconds.
   // use socket.destroy replace width write \u0003 2020/06/05
@@ -114,7 +114,7 @@ function login(opts) {
 
   function handleBeforeCreateUsp(data){
     if(pty.process !== currProcessName){
-      if(data === 'PassSid:'){
+      if(data.indexOf(TPT_READY_MARK) !== -1){
         pty.write(sid + '\n');
         removeIdleTimeout();
         pty.removeListener('data', handleBeforeCreateUsp);
@@ -145,7 +145,7 @@ function login(opts) {
     user._is_remove = true;
     removeUser(sid, username);
   }
-  pty.on('error', _done);
+  pty.addListener('error', _done);
 
   if(!global.IS_PRO){
     const fs = require('fs');
@@ -154,10 +154,10 @@ function login(opts) {
         console.error(err);
         return;
       }
-      pty.on('data', function(data){
+      pty.addListener('data', function(data){
         fs.writeSync(fd, data)
       })
-      pty.on('exit', function(){
+      pty.addListener('exit', function(){
         fs.closeSync(fd);
       })
     });
