@@ -6,6 +6,7 @@
 //   const i = stdout.indexOf('\n');
 //   return stdout.substr(0, i);  
 // }
+const fs = require('fs');
 
 function escapeInjection(userInput) {
   return userInput.replace(/\n|\r|`|"|'/g, (mstr) => {
@@ -59,11 +60,42 @@ function genUserServerFlag(){
   }
 }
 
+
+function blockingWhenUnReadable(fd){
+  const buffer = Buffer.alloc(1);
+  let isContinue = true;
+  while(isContinue){
+    try {
+      fs.readSync(fd, buffer);
+      isContinue = false;
+    } catch(e){
+      // console.error('err.code', e.code);
+      if(e.code === 'EAGAIN' || 
+      e.code === "EIO" || 
+      e.code === "EWOULDBLOCK"){
+        isContinue = true;
+      } else {
+        throw e;
+      }
+    }
+  }
+  return buffer;
+}
+
+function isEndErrFd(error){
+  return error.code === "EIO" ||
+  error.code === "EAGAIN" || 
+  error.code === "EBADF" || 
+  error.code === "EWOULDBLOCK";
+}
+
 module.exports = {
   // getFirstLine,
   escapeInjection,
   safeWrap,
-  genUserServerFlag
+  genUserServerFlag,
+  blockingWhenUnReadable,
+  isEndErrFd
 }
 
 

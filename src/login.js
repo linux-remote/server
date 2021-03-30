@@ -1,7 +1,7 @@
 // The expect like UI.
 
 const nodePty = require('node-pty');
-const { escapeInjection } = require('./util');
+const { escapeInjection, blockingWhenUnReadable, isEndErrFd } = require('./util');
 const { genSid, addUser, removeUser } = require('./session.js');
 const os = require('os');
 const waitEnterPswTimeout = 5000;
@@ -17,12 +17,15 @@ function killLoginTerm(pty){
 function login(opts) {
   const username = escapeInjection(opts.username);
   // username can't see in `top -c -b`
-  const pty = nodePty.spawn(global.CONF.loginBinPath, ['-h', opts.ip, username]);
+  const encoding = 'utf-8';
+  const pty = nodePty.spawn(global.CONF.loginBinPath, ['-h', opts.ip, username], {encoding});
+  
 
   const callback = opts.end;
   let currProcessName = pty.process;
   let sid = opts.sid;
   let user;
+  let isDone = false;
   let timer = setTimeout(function(){
     timer = null;
     _done({
@@ -31,14 +34,50 @@ function login(opts) {
     });
   }, waitEnterPswTimeout);
 
+  pty.once('data', function() {
+    const password = escapeInjection(opts.password);
+    pty.write(password + '\n');
+    pty.addListener('data', handleBeforeLoginData);
+  });
+
+  let isClose = false;
+  pty.once('close', function(){
+    isClose = true;
+    console.log('close');
+  });
+
+  pty.on('error', function(error){
+    setTimeout(() => {
+      if(!isClose){
+        _done(error);
+      } else {
+        if(isEndErrFd(error)){
+          return;
+        }
+        if(!isDone){
+          _done(error);
+        } else {
+          console.error('pty error', error);
+        }
+      }
+    })
+  });
+
+  const firstBuffer = blockingWhenUnReadable(pty._fd); // Block in the beginning
+  pty.emit('data', firstBuffer.toString(encoding));
+
   function _done(err){
+    if(isDone){
+      callback = null;
+      return;
+    }
+    isDone = true;
     if(timer){
       clearTimeout(timer);
       timer = null;
     }
 
     pty.removeListener('data', handleBeforeLoginData);
-    pty.removeListener('error', _done);
 
     if(err){
       killLoginTerm(pty);
@@ -68,11 +107,7 @@ function login(opts) {
     }
   }
 
-  pty.once('data', function() {
-    const password = escapeInjection(opts.password);
-    pty.write(password + '\n');
-    pty.addListener('data', handleBeforeLoginData);
-  });
+
 
   function handleBeforeLoginData(data) {
     if(currProcessName !== pty.process){
@@ -145,7 +180,8 @@ function login(opts) {
     user._is_remove = true;
     removeUser(sid, username);
   }
-  pty.addListener('error', _done);
+
+
 
   if(!global.IS_PRO){
     const fs = require('fs');
